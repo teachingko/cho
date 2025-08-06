@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 정보 검색</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- SheetJS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Fallback for CDN issues -->
+    <script>
+        // CDN 로딩 확인
+        window.addEventListener('load', function() {
+            if (typeof XLSX === 'undefined') {
+                console.error('SheetJS CDN 로딩 실패');
+                alert('SheetJS 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인해주세요.');
+            }
+            if (typeof lucide === 'undefined') {
+                console.error('Lucide CDN 로딩 실패');
+                alert('아이콘 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인해주세요.');
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- 로딩 화면 -->
+        <div id="loading" class="loading-screen">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>데이터를 로딩 중입니다...</p>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div id="main-content" class="main-content" style="display: none;">
+            <!-- 헤더 -->
+            <div class="header">
+                <h1>학생 정보 검색</h1>
+                <p>학번을 입력하여 학생의 상세 정보를 확인하세요</p>
+            </div>
+
+            <!-- 검색 섹션 -->
+            <div class="search-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput"
+                            placeholder="학번을 입력하세요 (예: 30101)"
+                            class="search-input"
+                        >
+                    </div>
+                    <button id="searchButton" class="search-button">
+                        <i data-lucide="search"></i>
+                        검색
+                    </button>
+                </div>
+            </div>
+
+            <!-- 결과 표시 영역 -->
+            <div id="result-area">
+                <!-- 초기 안내 메시지 -->
+                <div id="welcome-message" class="message-card">
+                    <div class="message-icon">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <h3>학번을 입력해 주세요</h3>
+                    <p>학생의 정보를 확인하려면 위에 학번을 입력하고 검색 버튼을 누르세요.</p>
+                    <p class="student-count">총 <span id="totalCount">0</span>명의 학생 정보가 준비되어 있습니다.</p>
+                </div>
+
+                <!-- 검색 결과 없음 메시지 -->
+                <div id="no-result-message" class="message-card" style="display: none;">
+                    <div class="message-icon">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <h3>학생을 찾을 수 없습니다</h3>
+                    <p>입력하신 학번 "<span id="searchedId"></span>"에 해당하는 학생이 없습니다.</p>
+                    <p class="retry-text">학번을 다시 확인해 주세요.</p>
+                </div>
+
+                <!-- 학생 정보 카드 -->
+                <div id="student-card" class="student-card" style="display: none;">
+                    <!-- 카드 헤더 -->
+                    <div class="card-header">
+                        <h2 id="studentName"></h2>
+                        <div class="student-basic-info">
+                            <i data-lucide="user"></i>
+                            <span>학번: <span id="studentId"></span></span>
+                            <span class="divider">|</span>
+                            <span><span id="studentClass"></span>반 <span id="studentNumber"></span>번</span>
+                        </div>
+                    </div>
+
+                    <!-- 정보 카드들 -->
+                    <div class="info-grid">
+                        <!-- 행복의 가치 -->
+                        <div class="info-card happiness-card">
+                            <div class="card-title">
+                                <i data-lucide="heart"></i>
+                                <h3>행복의 가치</h3>
+                            </div>
+                            <p class="happiness-value" id="happinessValue"></p>
+                            <div class="score-box">
+                                <span class="score-label">자아 존중감 점수:</span>
+                                <span class="score-value" id="selfEsteemScore"></span>
+                            </div>
+                        </div>
+
+                        <!-- 다중 지능 -->
+                        <div class="info-card intelligence-card">
+                            <div class="card-title">
+                                <i data-lucide="target"></i>
+                                <h3>다중 지능</h3>
+                            </div>
+                            <div class="intelligence-list">
+                                <div class="intelligence-item">
+                                    <span class="rank">1순위:</span>
+                                    <span class="value" id="intelligence1"></span>
+                                </div>
+                                <div class="intelligence-item">
+                                    <span class="rank">2순위:</span>
+                                    <span class="value" id="intelligence2"></span>
+                                </div>
+                                <div class="intelligence-item">
+                                    <span class="rank">3순위:</span>
+                                    <span class="value" id="intelligence3"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 롤모델 정보 -->
+                        <div class="info-card rolemodel-card">
+                            <div class="card-title">
+                                <i data-lucide="users"></i>
+                                <h3>롤모델</h3>
+                            </div>
+                            <div class="rolemodel-info">
+                                <div class="rolemodel-item">
+                                    <span class="label">롤모델:</span>
+                                    <span class="value" id="rolemodelName"></span>
+                                </div>
+                                <div class="rolemodel-item">
+                                    <span class="label">본받고 싶은 것:</span>
+                                    <span class="value" id="rolemodelTrait"></span>
+                                </div>
+                                <div class="rolemodel-item">
+                                    <span class="label">롤모델에게 하고 싶은 말:</span>
+                                    <span class="value" id="rolemodelMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 진로 정보 -->
+                        <div class="info-card career-card">
+                            <div class="card-title">
+                                <i data-lucide="graduation-cap"></i>
+                                <h3>진로 정보</h3>
+                            </div>
+                            <div class="career-info">
+                                <div class="career-item">
+                                    <span class="label">2학년 성적:</span>
+                                    <span class="value" id="grade"></span>
+                                </div>
+                                <div class="career-item">
+                                    <span class="label">희망 학교:</span>
+                                    <span class="value" id="hopeSchool"></span>
+                                </div>
+                                <div class="career-item">
+                                    <span class="label">희망 이유:</span>
+                                    <span class="value" id="hopeReason"></span>
+                                </div>
+                                <div class="career-item">
+                                    <span class="label">현장체험 참여:</span>
+                                    <span class="value" id="fieldExperience"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 대인관계 유형 -->
+                    <div class="full-width-card relationship-card">
+                        <div class="card-title">
+                            <i data-lucide="users"></i>
+                            <h3>대인 관계 유형</h3>
+                        </div>
+                        <p class="relationship-type" id="relationshipType"></p>
+                    </div>
+
+                    <!-- 미래의 나 -->
+                    <div class="full-width-card future-card">
+                        <div class="card-title">
+                            <i data-lucide="graduation-cap"></i>
+                            <h3>20년 후 35살의 나</h3>
+                        </div>
+                        <div class="future-content">
+                            <p id="futureDescription"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
